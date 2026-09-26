@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    environment:
+      DJANGO_SETTINGS_MODULE: pushdemo.settings.local
+    command: ["local"]
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app

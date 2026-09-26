@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="{% url 'notifications:manifest' %}">
+  <title>Bildirim Ayarları</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f3f4f6;color:#111827;margin:0}.wrap{max-width:820px;margin:auto;padding:24px}.card{background:#fff;padding:20px;border-radius:14px;margin-bottom:18px}button{padding:10px 14px;border:0;border-radius:8px;background:#111827;color:#fff;cursor:pointer;margin-right:6px}.danger{background:#b91c1c}.muted{color:#6b7280}.row{display:flex;justify-content:space-between;gap:14px;align-items:center}.pref,.device{padding:12px;border:1px solid #e5e7eb;border-radius:10px;margin:8px 0}.pref label{display:flex;gap:10px}.device small{display:block;color:#6b7280;word-break:break-all;margin-top:6px}.message{padding:10px;background:#ecfdf5;margin-bottom:12px;border-radius:8px}.top{display:flex;justify-content:space-between;align-items:center}.status{font-weight:700}.actions{margin-top:12px}
+  </style>
+</head>
+<body data-vapid-public-key="{{ vapid_public_key }}">
+<div class="wrap">
+  <div class="top">
+    <div><h1>Bildirim Ayarları</h1><div class="muted">{{ request.user.username }}</div></div>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Çıkış</button></form>
+  </div>
+
+  <div>
+    selam
+  </div>
+  {% for message in messages %}<div class="message">selam{{ message }}</div>{% endfor %}
+  <div>
+    selam2
+  </div>
+
+  <div class="card">
+    <div class="row"><div><h2>Bu cihaz</h2><div id="deviceStatus" class="muted">Kontrol ediliyor...</div></div><div id="deviceBadge" class="status"></div></div>
+    <div class="actions">
+      <button type="button" id="enableBtn">Bildirimleri Aç</button>
+      <button type="button" id="disableBtn" class="danger">Bildirimleri Kapat</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bildirim tercihleri</h2>
+    <p class="muted">Bu tercihler yalnızca kategorili otomatik bildirimlerde kullanılır.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% for item in preference_items %}
+        <div class="pref"><label><input type="checkbox" name="category_ids" value="{{ item.id }}" {% if item.enabled %}checked{% endif %}><span><strong>{{ item.name }}</strong>{% if item.description %}<br><span class="muted">{{ item.description }}</span>{% endif %}</span></label></div>
+      {% empty %}<p class="muted">Kategori yok.</p>{% endfor %}
+      <button type="submit">Tercihleri Kaydet</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Aktif cihazlar ({{ subscription_count }})</h2>
+    {% for subscription in subscriptions %}
+      <div class="device"><strong>Cihaz #{{ forloop.counter }}</strong><div class="muted">Son güncelleme: {{ subscription.updated_at|date:"d.m.Y H:i" }}</div>{% if subscription.user_agent %}<small>{{ subscription.user_agent }}</small>{% endif %}</div>
+    {% empty %}<p class="muted">Aktif cihaz yok.</p>{% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>Test</h2>
+    <p class="muted">Sabit içerikli test bildirimi hesabınızdaki aktif cihazlara gönderilir.</p>
+    <form method="post" action="{% url 'notifications:send_test' %}">{% csrf_token %}<button type="submit">Test Bildirimi Gönder</button></form>
+  </div>
+</div>
+
+<script>
+const publicKey = document.body.dataset.vapidPublicKey;
+const statusText = document.getElementById("deviceStatus");
+const statusBadge = document.getElementById("deviceBadge");
+
+function csrf() {
+    return document.cookie.split(";").map(x => x.trim()).find(x => x.startsWith("csrftoken="))?.split("=")[1] || "";
+}
+
+function keyBytes(value) {
+    const pad = "=".repeat((4 - value.length % 4) % 4);
+    const raw = atob((value + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+async function post(url, data) {
+    const r = await fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": decodeURIComponent(csrf())
+        },
+        body: JSON.stringify(data)
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+    return j;
+}
+async function registration() {
+    if (!("serviceWorker" in navigator)) throw new Error("Service Worker desteklenmiyor.");
+    return navigator.serviceWorker.register("{% url 'notifications:service_worker' %}", {
+        scope: "/"
+    });
+}
+
+function sameKey(sub) {
+    const current = sub?.options?.applicationServerKey;
+    if (!current || !publicKey) return false;
+    const a = new Uint8Array(current),
+        b = keyBytes(publicKey);
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+async function refresh() {
+    try {
+        const reg = await registration();
+        const sub = await reg.pushManager.getSubscription();
+        const active = Notification.permission === "granted" && sub && sameKey(sub);
+        statusText.textContent = active ? "Bildirimler açık." : `Bildirim izni: ${Notification.permission}`;
+        statusBadge.textContent = active ? "Aktif" : "Kapalı";
+    } catch (e) {
+        statusText.textContent = e.message;
+    }
+}
+async function enable() {
+    try {
+        if (!publicKey) throw new Error("VAPID public key bulunamadı.");
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") throw new Error("Bildirim izni verilmedi.");
+        const reg = await registration();
+        let sub = await reg.pushManager.getSubscription();
+        if (sub && !sameKey(sub)) {
+            try {
+                await post("{% url 'notifications:unsubscribe' %}", {
+                    endpoint: sub.endpoint
+                });
+            } catch (_) {}
+            await sub.unsubscribe();
+            sub = null;
+        }
+        if (!sub) sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: keyBytes(publicKey)
+        });
+        await post("{% url 'notifications:subscribe' %}", sub.toJSON());
+        location.reload();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+async function disable() {
+    try {
+        const reg = await registration();
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) return alert("Bu cihazda aktif abonelik yok.");
+        await post("{% url 'notifications:unsubscribe' %}", {
+            endpoint: sub.endpoint
+        });
+        await sub.unsubscribe();
+        location.reload();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+document.getElementById("enableBtn").addEventListener("click", enable);
+document.getElementById("disableBtn").addEventListener("click", disable);
+refresh();
+</script>
+</body>
+</html>

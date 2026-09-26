@@ -1,0 +1,24 @@
+services:
+  web:
+    build: .
+    container_name: notification_web_test
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: pushdemo.settings.test
+    command: ["test"]
+    ports:
+      - "127.0.0.1:5001:8000"
+    volumes:
+      - ./keys:/app/keys
+      - /var/www/platform_farmingo:/app/staticfiles
+    networks:
+      - notification
+
+networks:
+  notification:
+    name: notification
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.40.0/24
+          gateway: 172.31.40.1

@@ -1,0 +1,6 @@
+.git
+__pycache__
+*.pyc
+staticfiles
+keys/vapid_private.pem
+keys/vapid_public.txt

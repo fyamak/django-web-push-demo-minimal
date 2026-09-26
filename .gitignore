@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+staticfiles/
+.vscode/
+.idea/
+keys/*
+!keys/.gitkeep
+venv/
+.venv
+venv

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bildirim Yönetimi</title>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f3f4f6;color:#111827;margin:0}.wrap{max-width:1100px;margin:auto;padding:24px}.card{background:#fff;padding:20px;border-radius:14px;margin-bottom:18px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:5px 0 12px}input[type=checkbox]{width:auto}button{padding:10px 14px;border:0;border-radius:8px;background:#111827;color:#fff;cursor:pointer}.muted{color:#6b7280}.tag{display:inline-block;background:#e5e7eb;padding:3px 7px;border-radius:10px;margin:2px}.ok{color:#166534}.off{color:#991b1b}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.message{padding:10px;background:#fee2e2;margin-bottom:12px;border-radius:8px}.result{background:#ecfdf5;padding:12px;border-radius:8px;margin-bottom:16px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Bildirim Yönetimi</h1><div class="muted">{{ request.user.username }}</div></div>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Çıkış</button></form>
+  </div>
+
+  {% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card">
+      <h2>Kullanıcılar</h2>
+      <label><input type="checkbox" name="send_to_all"> Tüm normal kullanıcılara gönder</label>
+      <div style="overflow:auto;margin-top:12px">
+        <table>
+          <thead><tr><th>Seç</th><th>Kullanıcı</th><th>Bildirim</th><th>Cihaz</th><th>Açık kategoriler</th></tr></thead>
+          <tbody>
+          {% for user in users %}
+            <tr>
+              <td><input type="checkbox" name="user_ids" value="{{ user.id }}"></td>
+              <td><strong>{{ user.username }}</strong>{% if user.email %}<div class="muted">{{ user.email }}</div>{% endif %}</td>
+              <td>{% if user.subscription_count %}<span class="ok">Aktif</span>{% else %}<span class="off">Kapalı</span>{% endif %}</td>
+              <td>{{ user.subscription_count }}</td>
+              <td>
+                {% for pref in user.enabled_notification_preferences %}<span class="tag">{{ pref.category.name }}</span>{% empty %}<span class="muted">Yok</span>{% endfor %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Kullanıcı yok.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Manuel bildirim</h2>
+      <p class="muted">Kategori tercihi kontrol edilmez. Yalnızca aktif push subscription bulunan kullanıcılara gönderilir.</p>
+      <label>Başlık</label><input name="title" maxlength="120" required>
+      <label>Mesaj</label><textarea name="body" maxlength="500" rows="4" required></textarea>
+      <label>Açılacak URL</label><input name="url" value="/">
+      <button type="submit">Bildirim Gönder</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>
