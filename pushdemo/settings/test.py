@@ -1,17 +1,17 @@
 from .base import *  # noqa: F403,F401
 
-DEBUG = False
-SECRET_KEY = "replace-this-test-secret-key"
-ALLOWED_HOSTS = ["testplatform.farmingo.com.tr"]
-CSRF_TRUSTED_ORIGINS = ["https://testplatform.farmingo.com.tr"]
+DEBUG = True
+SECRET_KEY = "!cym7z#4rvc7ld)x52&)9igx=-y^yz=l$9m(=9^jzbp@ugdb9o"
+ALLOWED_HOSTS = ["testplatform.farmingo.com.tr", "localhost", "127.0.0.1",]
+CSRF_TRUSTED_ORIGINS = ["https://testplatform.farmingo.com.tr",]
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "notification",
+        "NAME": "notification_minimal",
         "USER": "pushdemo",
         "PASSWORD": "pushdemo",
-        "HOST": "172.31.40.1",
+        "HOST": "172.40.0.1",
         "PORT": "5432",
     }
 }

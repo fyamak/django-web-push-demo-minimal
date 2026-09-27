@@ -19,14 +19,6 @@
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Çıkış</button></form>
   </div>
 
-  <div>
-    selam
-  </div>
-  {% for message in messages %}<div class="message">selam{{ message }}</div>{% endfor %}
-  <div>
-    selam2
-  </div>
-
   <div class="card">
     <div class="row"><div><h2>Bu cihaz</h2><div id="deviceStatus" class="muted">Kontrol ediliyor...</div></div><div id="deviceBadge" class="status"></div></div>
     <div class="actions">
