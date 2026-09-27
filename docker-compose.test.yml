@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    container_name: notification_web_test
+    container_name: notification_minimal_web_test
     restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: pushdemo.settings.test
@@ -12,13 +12,13 @@ services:
       - ./keys:/app/keys
       - /var/www/platform_farmingo:/app/staticfiles
     networks:
-      - notification
+      - notification_minimal
 
 networks:
-  notification:
-    name: notification
+  notification_minimal:
+    name: notification_minimal
     driver: bridge
     ipam:
       config:
-        - subnet: 172.40.0.0/24
-          gateway: 172.40.0.1
+        - subnet: 172.41.0.0/24
+          gateway: 172.41.0.1
